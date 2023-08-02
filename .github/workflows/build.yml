@@ -45,7 +45,7 @@ jobs:
         with:
           files: |
             revanced-cache/*_signed.apk
-          name: Revanced Extended 
+          name: Revanced
           tag_name: all
           body_path: ${{ github.workspace }}-CHANGELOG.txt
         env:
