@@ -6,12 +6,12 @@ import requests
 from src.build import Build
 
 app_names = ["youtube"]
-exclude_patches = ["custom-branding-icon-revancify-blue,custom-branding-youtube-name"]
-include_patches = ["custom-branding-icon-revancify-red"]
+exclude_patches = [""]
+include_patches = [""]
 
 # Define the repositories to check
 repo1 = os.environ["GITHUB_REPOSITORY"]
-repo2 = "inotia00/revanced-patches"
+repo2 = "revanced/revanced-patches"
 
 # Define the time threshold for assets in days
 time_threshold = 1
