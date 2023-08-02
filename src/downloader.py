@@ -42,9 +42,9 @@ class Downloader:
 
         # Build the API urls
         repositories = [
-            "inotia00/revanced-cli",
-            "inotia00/revanced-patches",
-            "inotia00/revanced-integrations",
+            "revanced/revanced-cli",
+            "revanced/revanced-patches",
+            "revanced/revanced-integrations",
         ]
         api_urls = [
             f"https://api.github.com/repos/{repo}/releases/latest"
@@ -62,7 +62,7 @@ class Downloader:
 
                 for tool in tools.get("assets", []):
                     filepath = self._download(tool["browser_download_url"], tool["name"])
-                    name = repo.replace("inotia00/", "")
+                    name = repo.replace("revanced/", "")
                     downloaded_files[name] = filepath
 
             except requests.exceptions.HTTPError as err:
