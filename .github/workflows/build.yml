@@ -1,34 +1,60 @@
-name: Python Package using Conda
-
-on: [push]
-
+name: Build Revanced
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
 jobs:
-  build-linux:
+  build-apps:
+    name: Build Apps
+    permissions: write-all
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 5
-
+    timeout-minutes: 20
+    
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.10'
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
-      run: |
-        conda env update --file environment.yml --name base
-    - name: Lint with flake8
-      run: |
-        conda install flake8
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        conda install pytest
-        pytest
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java and Python
+        uses: actions/setup-java@v3
+        with:
+          distribution: zulu
+          java-version: 17
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11.3
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build Revanced 
+        run: python main.py
+
+      - name: Generate release info
+        run: | 
+          echo "
+          **Patches Changelog:** :point_down:
+          [Revanced](https://github.com/revanced/revanced-patches/releases/latest)
+          "> ${{ github.workspace }}-CHANGELOG.txt
+          
+      - name: Release
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          files: |
+            revanced-cache/*_signed.apk
+          name: Revanced Extended 
+          tag_name: all
+          body_path: ${{ github.workspace }}-CHANGELOG.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   
+          
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 1
