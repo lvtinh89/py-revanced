@@ -1,3 +1,5 @@
+import requests
+
 from selectolax.lexbor import LexborHTMLParser
 from src._config import app_reference
 
