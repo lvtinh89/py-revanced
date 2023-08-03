@@ -11,7 +11,7 @@
     "value" : "YouTube"
   }, {
     "key" : "iconPath",
-    "value" : null
+    "value" : "branding"
   } ]
 }, {
   "patchName" : "Theme",
