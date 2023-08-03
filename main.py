@@ -5,7 +5,7 @@ import requests
 
 from src.build import Build
 
-app_names = ["youtube-music"]
+app_names = ["twitch"]
 exclude_patches = [""]
 include_patches = [""]
 
