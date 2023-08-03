@@ -13,16 +13,4 @@
     "key" : "iconPath",
     "value" : "branding"
   } ]
-}, {
-  "patchName" : "Theme",
-  "options" : [ {
-    "key" : "darkThemeBackgroundColor",
-    "value" : "@android:color/black"
-  }, {
-    "key" : "lightThemeBackgroundColor",
-    "value" : "@android:color/white"
-  }, {
-    "key" : "splashScreenBackgroundColor",
-    "value" : "?android:attr/colorBackground"
-  } ]
 } ]
