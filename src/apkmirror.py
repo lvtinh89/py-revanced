@@ -1,51 +1,27 @@
 import requests
-
 from selectolax.lexbor import LexborHTMLParser
 from src._config import app_reference
 
-# Define some constants for CSS selectors
-APK_BADGE = ".apkm-badge"
-ACCENT_COLOR = ".accent_color"
-DOWNLOAD_LINK = ".downloadLink"
-APK_SPAN = "div.table-row:nth-child(3) > div:nth-child(1) > span:nth-child(2)"
-ACCENT_BG = "a.accent_bg"
-NOTES_SPAN = "p.notes:nth-child(3) > span:nth-child(1) > a:nth-child(1)"
+class APKmirror(Downloader):
+    def extract_download_link(self, page: str, app_name: str) -> str:
+        logger.debug(f"Extracting download link from {page}")
+        parser = LexborHTMLParser(self.client.get(page).text)
 
-class APKmirror:
-    def __init__(self):
-        self.client = requests.Session()
-        self.client.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0)"
-                + "  Gecko/20100101 Firefox/113.0"
-            }
-        )
+        href = parser.css_first("a.accent_bg").attributes["href"]
 
-    def apkmirror_get_latest_version_download_page(self, app_name: str) -> dict:
-        page = f"{app_reference[app_name]['apkmirror']}"
+        resp = self.client.get("https://www.apkmirror.com" + href)
 
-        res = self.client.get(page)
+        parser = LexborHTMLParser(resp.text)
 
-        parser = LexborHTMLParser(res.text)
+        href = parser.css_first(
+            "p.notes:nth-child(3) > span:nth-child(1) > a:nth-child(1)"
+        ).attributes["href"]
 
-        version = parser.css_first(
-            "div.p-relative:nth-child(4) > div:nth-child(2) > div:nth-child(1) >"
-            + " div:nth-child(1) > div:nth-child(2) >"
-            + " div:nth-child(1) > h5:nth-child(1) > a:nth-child(1)"
-        ).text()
+        return "https://www.apkmirror.com" + href
 
-        download_link = parser.css_first(DOWNLOAD_LINK).attributes["href"]
-
-        return {
-            "version": version.split(" ")[1],
-            "url": "https://www.apkmirror.com" + download_link,
-        }
-
-    def get_download_page(self, url: str) -> str:
-        parser = LexborHTMLParser(self.client.get(url, timeout=10).text)
-
-        apm = parser.css(APK_BADGE)
-
+    def get_download_page(self, parser: LexborHTMLParser, main_page: str) -> str:
+        logger.debug(f"Getting download page from {main_page}")
+        apm = parser.css(".apkm-badge")
         sub_url = ""
         for is_apm in apm:
             parent_text = is_apm.parent.parent.text()
@@ -56,51 +32,46 @@ class APKmirror:
                 or "noarch" in parent_text
             ):
                 parser = is_apm.parent
-                sub_url = parser.css_first(ACCENT_COLOR).attributes["href"]
+                sub_url = parser.css_first(".accent_color").attributes["href"]
                 break
         if sub_url == "":
-            raise Exception("No download page found")
+            logger.exception(
+                f"Unable to find any apk on apkmirror_specific_version on {main_page}"
+            )
+            raise AppNotFound("Unable to find apk on apkmirror site.")
 
         return "https://www.apkmirror.com" + sub_url
 
-    def extract_download_link(self, page: str) -> str:
+    def specific_version(self, app_name: str, version: str) -> None:
+        logger.debug(f"Trying to download {app_name}, specific version: {version}")
+        version = version.replace(".", "-")
+        main_page = f"{app_reference[app_name]['apkmirror']}-{version}-release/"
+        parser = LexborHTMLParser(self.client.get(main_page, allow_redirects=True).text)
+        download_page = self.get_download_page(parser, main_page)
+        download_link = self.extract_download_link(download_page, app_name)
+        self._download(download_link, f"{app_name}.apk")
+        logger.debug(f"Downloaded {app_name} apk from apkmirror_specific_version")
+
+    def latest_version(self, app_name: str, **kwargs: Any) -> None:
+        logger.debug(f"Trying to download {app_name}'s latest version from apkmirror")
+        page = app_reference[app_name]['apkmirror']
+        if not page:
+            logger.debug("Invalid app")
+            raise AppNotFound("Invalid app")
         parser = LexborHTMLParser(self.client.get(page).text)
+        try:
+            main_page = parser.css_first(".appRowVariantTag > .accent_color").attributes["href"]
+        except AttributeError:
+            main_page = parser.css_first(".downloadLink").attributes["href"]
 
-        # Span class apkm-badge with text APK
-        apk_span = parser.css_first(APK_SPAN)
+        match = re.search(r"\d", main_page)
+        if not match:
+            logger.error("Cannot find app main page")
+            raise AppNotFound()
 
-        if not apk_span:
-            raise Exception("No download link found")
-
-        download_url = apk_span.parent.css_first("a").attributes["href"]
-
-        resp = self.client.get("https://www.apkmirror.com" + download_url)
-
-        parser = LexborHTMLParser(resp.text)
-
-        href = parser.css_first(ACCENT_BG).attributes["href"]
-
-        resp = self.client.get("https://www.apkmirror.com" + href)
-
-        parser = LexborHTMLParser(resp.text)
-
-        href = parser.css_first(NOTES_SPAN).attributes["href"]
-
-        return "https://www.apkmirror.com" + href
-
-    def download_file(self, url: str, file_name: str) -> None:
-        # Add a new method to download the file from the url
-        resp = self.client.get(url, stream=True)
-        with open(file_name, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=1024):
-                if chunk:
-                    f.write(chunk)
-                    f.flush()
-
-    def download_app(self, app_name: str) -> None:
-        # Add a new method to combine the steps of downloading an app
-        download_page = self.apkmirror_get_latest_version_download_page(app_name)
-        download_link = self.extract_download_link(download_page["url"])
-        file_name = f"{app_name}-{download_page['version']}.apk"
-        self.download_file(download_link, file_name)
-        
+        main_page = "https://www.apkmirror.com" + main_page
+        parser = LexborHTMLParser(self.client.get(main_page).text)
+        download_page = self.get_download_page(parser, main_page)
+        download_link = self.extract_download_link(download_page, app_name)
+        self._download(download_link, f"{app_name}.apk")
+        logger.debug(f"Downloaded {app_name} apk from apkmirror_specific_version in rt")
