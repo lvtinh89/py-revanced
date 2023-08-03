@@ -7,11 +7,11 @@
 }, {
   "patchName" : "Custom branding",
   "options" : [ {
-    "key" : "YouTubeappName",
+    "key" : "appName",
     "value" : "YouTube"
   }, {
-    "key" : "YouTubeiconPath",
-    "value" : "./revancify"
+    "key" : "iconPath",
+    "value" : null
   } ]
 }, {
   "patchName" : "Theme",
