@@ -28,7 +28,6 @@ class Downloader:
 
         with self.client.get(url, stream=True) as res:
             res.raise_for_status()
-
             with open(filepath, "wb") as file:
                 for chunk in res.iter_content(chunk_size=8192):
                     file.write(chunk)
@@ -70,9 +69,8 @@ class Downloader:
                 continue
 
         return downloaded_files
-    def download_apk(self, app_name: str):
-        hasversion = False
 
+    def download_apk(self, app_name: str):
         # Load from patches.json
         with open(f"./{config['dist_dir']}/patches.json", "r") as patches_file:
             patches = json.load(patches_file)
@@ -87,8 +85,6 @@ class Downloader:
 
                         version = version[-1]
 
-                        hasversion = True
-
                         page = (
                             f"{app_reference[app_name]['apkmirror']}"
                             + f"-{version.replace('.', '-')}-release/"
@@ -101,14 +97,3 @@ class Downloader:
                         filename = f"{app_reference[app_name]['name']}-{version}.apk"
 
                         return self._download(href, filename)
-
-            if not hasversion:
-                data = APKmirror().apkmirror_get_latest_version_download_page(
-                    app_name=app_name
-                )
-
-                href = APKmirror().extract_download_link(data["url"])
-
-                filename = f"{app_reference[app_name]['name']}-{data['version']}.apk"
-
-                return self._download(href, filename)
