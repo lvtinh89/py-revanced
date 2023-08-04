@@ -7,7 +7,7 @@ import requests
 from src.build import Build
 
 app_names = ["youtube"]
-exclude_patches = [""]
+exclude_patches = ["hide-mix-playlists"]
 include_patches = [""]
 
 # Define the repositories to check
