@@ -8,7 +8,7 @@
   "patchName" : "Custom branding",
   "options" : [ {
     "key" : "appName",
-    "value" : "YouTubeX"
+    "value" : "YT Video"
   }, {
     "key" : "iconPath",
     "value" : "branding"
